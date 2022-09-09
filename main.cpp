@@ -21,8 +21,9 @@ void print(T obj)
 
 class str
 {
+  #pragma region 
    char* rft = nullptr;
-   size_t size = 3;
+   size_t size = 0;
    size_t capacity = 5;
    public:
    
@@ -52,17 +53,18 @@ class str
      delete[] rft;
    }
     
-  const size_t length() const { return size; }
-   const char* get() const { return rft;}
+  const size_t length() const { return size != 0 ? size - 1 : size; }
+  const char* get() const { return rft;}
+  #pragma endregion
 
-   int replace_all(str& s, const str& from, const str& to)
+   int replace_all(const str& from, const str& to)
    {
-     auto d = s.get();
+
+    if(length() == 0 || from.length() == 0 || to.length() == 0) return 0;    
 
      int i = 0;
-     for(; i < s.length(); ++i){
-       auto n = d[i];
-       cout << n << '\n';
+     for(; i < length(); ++i){
+       
      }
 
      return 0;
@@ -70,17 +72,18 @@ class str
 
     str& operator=(const string& s)
     {
-        delete[] rft;
+        if(s == "") return *this;
         
         string sd(s);
         sd += std::string(1, '\0');
 
-
          if(sd.length() >= capacity)
          {
-            capacity = sd.length() + sd.length()/3;
+            capacity = sd.length() + sd.length()/3 + 1;
          }
 
+        delete[] rft;
+        size = sd.length();
         rft = new char[capacity];
 
         int i = 0;
@@ -89,7 +92,6 @@ class str
             rft[i] = s[i];
         }
 
-        size = sd.length();
         return *this;
     }
 };
@@ -103,7 +105,6 @@ int main(int argc, char* argv[])
 {
     str s = "hello, world!";
     str & rf = s;
-    rf.replace_all(rf, "", "");
-
+    rf.replace_all("", "8");
     return 0;
 }
