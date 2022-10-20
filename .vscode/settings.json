@@ -27,5 +27,28 @@
     "**/.*/**",
     "**/.vscode",
     "**/.vscode/**"
-  ]
+  ],
+  "files.associations": {
+    "*.ipp": "cpp",
+    "chrono": "cpp",
+    "deque": "cpp",
+    "execution": "cpp",
+    "functional": "cpp",
+    "list": "cpp",
+    "memory": "cpp",
+    "regex": "cpp",
+    "valarray": "cpp",
+    "vector": "cpp",
+    "xhash": "cpp",
+    "xlocale": "cpp",
+    "xmemory": "cpp",
+    "xstring": "cpp",
+    "xtree": "cpp",
+    "xutility": "cpp",
+    "memory_resource": "cpp",
+    "scoped_allocator": "cpp",
+    "sstream": "cpp",
+    "syncstream": "cpp",
+    "xiosbase": "cpp"
+  }
 }

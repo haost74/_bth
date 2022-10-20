@@ -13,9 +13,8 @@ using std::string;
 #include <boost/tokenizer.hpp>
 using boost::thread;
 namespace bf = boost::filesystem;
-
 // #include "src/scopr.hpp"
- #include "src/alexs.hpp"
+ #include "alexs.hpp"
 
 #pragma region 
 template<class T>
@@ -107,77 +106,170 @@ std::ostream& operator<<(std::ostream& out, const str& s)
   return out << s.get();
 }
 
-namespace nm
-{
-
-  template<class T,
-           class Traits = std::char_traits<T>,
-           class Allocator = std::allocator<T>>
-  class b_string{
-    public:
-    T *data;
-    size_t size;
-    union{
-      size_t capacity;
-      enum{SZ = (sizeof(data) + 2*sizeof(size_t) + 31)/32};
-      T small_str[SZ];
-    } sso;
-
-  };
+void print(string str){
+    SetConsoleOutputCP(CP_UTF8);
+    std::cout << str << '\n';
 }
 
-struct ci_char_traits : public std::char_traits<char>{
-   static char to_upper(char ch){
-    return std::toupper((unsigned char) ch);
+void print_cin(string str){
+        SetConsoleCP(1251);
+        SetConsoleOutputCP(1251);
+    std::cout << str << '\n';
+}
+
+
+
+class Mallocator {  };
+
+struct Blk {
+    void* ptr;
+    size_t size;
+};
+
+ template <class P, class F>
+ class FallbackAllocator : private P, private F{
+  public:
+    Blk  allocate(size_t n){
+      Blk r = P::allocate(n);
+      if(!r.ptr) r = F::allocate(n);
+      return r;
+    }
+    void deallocate(Blk b){
+      if(P::owns(b)) P::deallocate(b);
+      else F::deallocate(b);
+    }
+
+    bool owns(Blk b){
+      return P::owns(b) || F::owns(b);
+    }
+ };
+
+ template <size_t s> 
+class StackAllocator{
+   char d_[s];
+   char* p_;
+   StackAllocator():p_(d_){}
+   Blk allocate(size_t n){
+    auto n1 = roundToAligned(n);
+    if(n1 > (d_ + s) - p_){
+      return {nullptr, 0};
+    }
+    Blk result = {p_, n};
+    p_ += n1;
+    return result;
    }
 
-   static bool eq(char c1, char c2){
-    return to_upper(c1) == to_upper(c2);
+   void deallocate(Blk b){
+    if(b.ptr + roundToAligned(n) == p_){
+      p_ = b.ptr;
+    }
+   }
+
+   bool owns(Blk b){
+    return b.ptr >= d_ && b.ptr < d_ + s;
+   }
+
+   void deallocateAll(){
+    p_ = d_;
+   }
+
+   size_t roundToAligned(size_t n){
+    return n;
    }
 };
 
-#pragma endregion
 
-#define CONCATENATE_IMPL(s1, s2) s1##s2
-#define CONCATENATE(s1, s2) CONCATENATE_IMPL(s1, s2)
-#ifdef __COUNTER__
-#define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __COUNTER__)
-#else
-#define ANONYMOUS_VARIABLE(str) CONCATENATE(str, __LINE__)
-#endif
 
-namespace tmp
+using Loalloc = FallbackAllocator<StackAllocator<16384>,
+                  Mallocator>();
+
+template<size_t s>
+class allocStack
 {
-  enum class ScopeGuardOnExit {};
-  template<class Fun>
-  class ScopeGuard
+     char d_[s];
+     char* p_;
+     size_t roundToAligned(size_t n){return n;}
+  public:
+      allocStack():p_(d_){}
+      Blk allocate(size_t n){
+        auto n1 = roundToAligned(n);
+        if(n1 > (d_ + s) - p_){
+          return {nullptr, 0};
+        }
+        Blk result = {p_, n};
+        p_ += n1;
+        return result;
+      }
+};
+
+template<class P, class F>
+class back : private P, private F
+{
+  public:
+   Blk allocate(size_t n) { 
+    Blk r = P::allocate(n); 
+    if (!r.ptr) r = F::allocate(n); 
+   
+        return r; 
+    }
+
+    void deallocate(Blk b){
+      if(owns(b)) P:deallocate(b);
+      else F::deallocate(b);
+    }
+
+    bool owns(Blk b) { 
+       return P::owns(b) || F::owns(b); 
+    }
+};
+
+template<size_t s>
+struct pn
+{
+  char* p_;
+  char d_[s];
+  Blk allocate(size_t n)
   {
-    Fun fn;
-    public:
-    ScopeGuard(Fun &fn):fn(fn){}
-    ScopeGuard(Fun &&fn):fn(std::move(fn)){}
-    ~ScopeGuard(){fn();}
-  };
+    std::cout << "pn\n";
+    Blk k;
+    k.ptr = nullptr;
 
-  template <typename Fun>
-	auto operator+(ScopeGuardOnExit, Fun &&fn)
-	{
-		return ScopeGuard<Fun>(std::forward<Fun>(fn));
-	}
+    return k;
+  }
 
-}
+  bool owns(Blk b) {
+    return d_ <= b.ptr && b.ptr < d_ + s;
+  }
 
-#define SCOPE_EXIT auto ANONYMOUS_VARIABLE(SCOPE_EXIT_STATE) = ::tmp::ScopeGuardOnExit() + [&]() noexcept
+  void deallocate(Blk b)
+  {
 
+  }
+};
+
+struct fn
+{
+  Blk allocate(size_t n)
+  {
+    cout << "fn\n";
+    Blk k;
+    k.ptr = nullptr;
+    return k;
+  }
+
+  void deallocate(Blk b)
+  {
+
+  }
+};
 
 int main(int argc, char* argv[])
 {
-  
-// copy_faile();
-
-{
- SCOPE_EXIT{ cout << 1024 << '\n'; };
-}
- 
+   // 109.110.0.0
+   // 95.68.127.255
+    back<pn<16384>,fn> bk;
+    bk.allocate(10);
+    
+   
     return 0;
 }
